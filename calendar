@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Event Calendar</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+  }
+  .calendar-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-start; /* Align events to the left */
+  }
+  .event-tile {
+    flex: 0 0 calc(33.33% - 20px);
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+    margin-right: 20px; /* Add right margin for spacing */
+    box-sizing: border-box;
+    overflow: hidden;
+    position: relative;
+  }
+  .event-tile img {
+    width: 100%;
+    height: auto;
+    object-fit: cover;
+  }
+  .event-date {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background-color: black;
+    color: white;
+    padding: 5px;
+    border-radius: 5px;
+    font-size: 16px;
+  }
+  .event-details {
+    padding: 15px;
+    background-color: rgba(0, 0, 0, 0.5);
+    color: white;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+  }
+  .event-title {
+    margin-top: 10px;
+    color: white;
+    font-size: 20px;
+  }
+  @media (max-width: 768px) {
+    .event-tile {
+      width: 100%;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="calendar-container" id="calendar"></div>
+
+<script>
+const SHEET_ID = '14EmkCxP8DT54oxEcdue55UQykTRwyyo0zIDzX_Mbaz8';
+const API_KEY = 'AIzaSyAbN3MP1LVg23YWPc_o_mNuzW09QKv-MBo';
+const RANGE = 'Sheet1!A2:E';
+
+function fetchEventData() {
+  fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${RANGE}?key=${API_KEY}`)
+    .then(response => response.json())
+    .then(data => {
+      const filteredEvents = filterEvents(data.values);
+      generateCalendar(filteredEvents);
+    })
+    .catch(error => console.error('Error fetching data:', error));
+}
+
+function formatDate(dateStr) {
+  const date = new Date(dateStr);
+  const options = { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' };
+  return date.toLocaleDateString('en-US', options);
+}
+
+function filterEvents(events) {
+  const today = new Date();
+  const nextFourWeeks = new Date(today);
+  nextFourWeeks.setDate(nextFourWeeks.getDate() + 28);
+
+  return events.filter(event => {
+    const eventDate = new Date(event[2]); // Assuming event date is at index 2
+    return eventDate >= today && eventDate <= nextFourWeeks;
+  });
+}
+
+function generateCalendar(events) {
+  const calendarDiv = document.getElementById('calendar');
+  let calendarHTML = '';
+  events.forEach(event => {
+    const [title, description, date, imageUrl] = event;
+    const formattedDate = formatDate(date);
+    calendarHTML += `
+      <div class="event-tile">
+        <div class="event-date">${formattedDate}</div>
+        <img src="${imageUrl}" alt="Event Image">
+        <div class="event-details">
+          <div class="event-title">${title}</div>
+        </div>
+      </div>
+    `;
+  });
+  calendarDiv.innerHTML = calendarHTML;
+}
+
+// Call fetchEventData() to initiate fetching data from the Google Sheet when the page loads
+fetchEventData();
+</script>
+
+</body>
+</html>
